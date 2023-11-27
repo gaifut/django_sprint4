@@ -31,7 +31,6 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', 'localhost:8000']
 # Application definition
 
 INSTALLED_APPS = [
-    'users.apps.UsersConfig',
     'blog.apps.BlogConfig',
     'django_bootstrap5',
     'pages.apps.PagesConfig',

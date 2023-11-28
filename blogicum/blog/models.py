@@ -106,6 +106,12 @@ class Post(PublsihedCreatedModel):
         related_name='posts'
     )
 
+    image = models.ImageField(
+        upload_to='posts_images',
+        verbose_name='Фото',
+        blank=True
+    )
+
     class Meta:
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
@@ -120,3 +126,20 @@ class Post(PublsihedCreatedModel):
             f' {self.pub_date}'
             f' {self.author}'
         )
+
+
+class Comments (models.Model):
+    text = models.TextField('Текст комментария')
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='comments',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        ordering = ('created_at',)

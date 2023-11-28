@@ -37,3 +37,4 @@ urlpatterns = [
 handler403 = 'pages.views.csrf_403'
 handler404 = 'pages.views.page_not_found_404'
 handler500 = 'pages.views.server_error_500'
+

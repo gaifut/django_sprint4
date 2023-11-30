@@ -43,17 +43,27 @@ class Index(TemplateView):
 
 def post_detail(request, post_id):
     form = CommentsForm()
-    comments = get_object_or_404(
-                      filter_by_common_attributes(Post.objects),
-                      pk=post_id).comments.select_related('author')
+    # comments = get_object_or_404(
+    #                   filter_by_common_attributes(Post.objects),
+    #                   pk=post_id).comments.select_related('author')
 
-    return render(request, 'blog/detail.html',
-                  {'post': get_object_or_404(
-                      filter_by_common_attributes(Post.objects),
-                      pk=post_id),
-                      'form': form,
-                      'comments': comments
-                   })
+    # return render(request, 'blog/detail.html',
+    #               {'post': get_object_or_404(
+    #                   filter_by_common_attributes(Post.objects),
+    #                   pk=post_id),
+    #                   'form': form,
+    #                   'comments': comments
+    #                })
+
+    post = get_object_or_404(Post, pk=post_id)
+    
+    if post.is_published or (request.user.is_authenticated and request.user == post.author):
+        comments = post.comments.select_related('author')
+        return render(request, 'blog/detail.html', {'post': post, 'form': form, 'comments': comments})
+    else:
+        # Instead of returning HttpResponseForbidden, return an HTTP response with a 404 status.
+        # This ensures consistency with the test expectations.
+        return render(request, '404.html', status=404)
 
 
 def category_posts(request, category_slug):

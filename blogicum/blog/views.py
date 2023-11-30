@@ -8,11 +8,13 @@ from django.http import HttpResponseForbidden, HttpResponseRedirect
 
 
 from django.shortcuts import get_object_or_404, render, redirect
-from django.views.generic import CreateView, DeleteView, TemplateView, UpdateView
-from django.urls import reverse_lazy, reverse
+from django.views.generic import (
+    CreateView, DeleteView, TemplateView, UpdateView
+)
+from django.urls import reverse_lazy
 
 from blog.models import Category, Post, Comments
-from .forms import CommentsForm, PostForm
+from .forms import CommentsForm
 
 User = get_user_model()
 MAX_POSTS_PER_PAGE = 10
@@ -31,7 +33,6 @@ class Index(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
         posts = filter_by_common_attributes(Post.objects.order_by('-pub_date'))
         paginator = Paginator(posts, MAX_POSTS_PER_PAGE)
         page_number = self.request.GET.get('page')
@@ -56,13 +57,18 @@ def post_detail(request, post_id):
     #                })
 
     post = get_object_or_404(Post, pk=post_id)
-    
-    if post.is_published or (request.user.is_authenticated and request.user == post.author):
+
+    if post.is_published or (
+        request.user.is_authenticated and request.user == post.author
+    ):
         comments = post.comments.select_related('author')
-        return render(request, 'blog/detail.html', {'post': post, 'form': form, 'comments': comments})
+        return render(
+            request, 'blog/detail.html', {
+                'post': post,
+                'form': form,
+                'comments': comments
+            })
     else:
-        # Instead of returning HttpResponseForbidden, return an HTTP response with a 404 status.
-        # This ensures consistency with the test expectations.
         return render(request, '404.html', status=404)
 
 
@@ -73,7 +79,8 @@ def category_posts(request, category_slug):
         is_published=True,
     )
 
-    post_list = filter_by_common_attributes(category.posts).order_by('-pub_date')
+    post_list = filter_by_common_attributes(
+        category.posts).order_by('-pub_date')
     paginator = Paginator(post_list, MAX_POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -84,8 +91,8 @@ def category_posts(request, category_slug):
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
 
-    #posts = Post.objects.filter(author=profile)
-    
+    # posts = Post.objects.filter(author=profile)
+
     # paginator = Paginator(posts, MAX_POSTS_PER_PAGE)
     # page_number = request.GET.get('page')
     # page_obj = paginator.get_page(page_number)
@@ -95,7 +102,10 @@ def profile(request, username):
     if request.user == profile:
         posts = Post.objects.filter(author=profile)
     else:
-        posts = Post.objects.filter(author=profile, is_published=True)
+        posts = Post.objects.filter(author=profile,
+                                    is_published=True,
+                                    pub_date__lte=datetime.datetime.now()
+                                    )
 
     paginator = Paginator(posts, MAX_POSTS_PER_PAGE)
     page_number = request.GET.get('page')
@@ -113,15 +123,17 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     def get_object(self, queryset=None):
         username = self.kwargs.get('username')
         return get_object_or_404(User, username=username)
-    
+
     def get_success_url(self):
-        return reverse_lazy('blog:profile', kwargs={'username': self.request.user.username})
-    
+        return reverse_lazy(
+            'blog:profile', kwargs={'username': self.request.user.username
+                                    })
+
 
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     template_name = 'blog/create.html'
-    fields = ['title', 'text', 'pub_date', 'image', 'location', 'category',]
+    fields = ['title', 'text', 'pub_date', 'image', 'location', 'category', ]
 
     def get_success_url(self):
         return reverse_lazy(
@@ -137,8 +149,8 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 class PostUpdateView(LoginRequiredMixin, UpdateView):
     model = Post
     template_name = 'blog/create.html'
-    fields = ['title', 'text', 'pub_date', 'image', 'location', 'category',]
-    
+    fields = ['title', 'text', 'pub_date', 'image', 'location', 'category', ]
+
     def get_success_url(self):
         return reverse_lazy(
             'blog:profile',
@@ -146,17 +158,25 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
                     })
 
     def get(self, request, *args, **kwargs):
-        if self.request.user.is_authenticated and self.request.user == self.get_object().author:
+        if (self.request.user.is_authenticated
+                and self.request.user == self.get_object().author):
             return super().get(request, *args, **kwargs)
         else:
-            return HttpResponseRedirect(reverse_lazy('blog:post_detail', kwargs={'post_id': self.kwargs['pk']}))
+            return HttpResponseRedirect(
+                reverse_lazy('blog:post_detail', kwargs={
+                    'post_id': self.kwargs['pk']
+                }))
 
     def form_valid(self, form):
-        if self.request.user.is_authenticated and self.request.user == self.get_object().author:
+        if (self.request.user.is_authenticated
+                and self.request.user == self.get_object().author):
             form.instance.author = self.request.user
             return super().form_valid(form)
         else:
-            return HttpResponseRedirect(reverse_lazy('blog:post_detail', kwargs={'post_id': form.instance.id}))
+            return HttpResponseRedirect(
+                reverse_lazy('blog:post_detail', kwargs={
+                    'post_id': form.instance.id
+                }))
 
 
 @login_required
@@ -176,7 +196,9 @@ def edit_comment(request, post_id, comment_id):
     comment = get_object_or_404(Comments, pk=comment_id, post=post_id)
 
     if request.user != comment.author:
-            return HttpResponseForbidden('У вас нет прав на изменение этого комментария.')
+        return HttpResponseForbidden(
+            'У вас нет прав на изменение этого комментария.'
+        )
 
     form = CommentsForm(request.POST or None, instance=comment)
     context = {'form': form, 'comment': comment}
@@ -192,7 +214,7 @@ def edit_comment(request, post_id, comment_id):
 class PostDeleteView(LoginRequiredMixin, DeleteView):
     model = Post
     template_name = 'blog/create.html'
-    
+
     def get_success_url(self):
         return reverse_lazy(
             'blog:profile',
@@ -202,24 +224,27 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
     def form_valid(self, form):
         form.instance.author = self.request.user
         return super().form_valid(form)
-    
+
     def delete(self, request, *args, **kwargs):
         post = self.get_object()
-        if self.request.user.is_authenticated and self.request.user == post.author:
+        if (self.request.user.is_authenticated
+                and self.request.user == post.author):
             return super().delete(request, *args, **kwargs)
         else:
-            return HttpResponseForbidden("You don't have permission to delete this post.")
-        
+            return HttpResponseForbidden(
+                "You don't have permission to delete this post."
+            )
+
 
 @login_required
 def delete_comment(request, post_id, comment_id):
     comment = get_object_or_404(Comments, pk=comment_id, post=post_id)
 
     if request.user != comment.author:
-        return HttpResponseForbidden('У вас нет прав на удаление этого комментария.')
-    
-    form = CommentsForm(request.POST, instance=comment)
-    context = {'comment': comment} #'form': form,
+        return HttpResponseForbidden(
+            'У вас нет прав на удаление этого комментария.'
+        )
+    context = {'comment': comment}
     if request.method == 'POST':
         post_id = comment.post.id
         comment.delete()

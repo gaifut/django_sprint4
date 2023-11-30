@@ -11,6 +11,7 @@ class CommentsForm(forms.ModelForm):
             'text': forms.Textarea(attrs={'cols': 80, 'rows': 15}),
         }
 
+
 class PostForm(forms.ModelForm):
 
     class Meta:

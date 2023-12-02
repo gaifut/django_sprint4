@@ -4,10 +4,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
-from django.http import HttpResponseForbidden, HttpResponseRedirect
-
-
+from django.http import HttpResponseForbidden, HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404, render, redirect
+from django.utils import timezone
 from django.views.generic import (
     CreateView, DeleteView, TemplateView, UpdateView
 )
@@ -44,22 +43,12 @@ class Index(TemplateView):
 
 def post_detail(request, post_id):
     form = CommentsForm()
-    # comments = get_object_or_404(
-    #                   filter_by_common_attributes(Post.objects),
-    #                   pk=post_id).comments.select_related('author')
-
-    # return render(request, 'blog/detail.html',
-    #               {'post': get_object_or_404(
-    #                   filter_by_common_attributes(Post.objects),
-    #                   pk=post_id),
-    #                   'form': form,
-    #                   'comments': comments
-    #                })
-
     post = get_object_or_404(Post, pk=post_id)
-
-    if post.is_published or (
-        request.user.is_authenticated and request.user == post.author
+    if (
+        post.is_published
+        and post.pub_date <= timezone.now()
+        and post.category.is_published
+        or request.user == post.author
     ):
         comments = post.comments.select_related('author')
         return render(
@@ -69,7 +58,7 @@ def post_detail(request, post_id):
                 'comments': comments
             })
     else:
-        return render(request, '404.html', status=404)
+        raise Http404
 
 
 def category_posts(request, category_slug):
@@ -90,14 +79,6 @@ def category_posts(request, category_slug):
 
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
-
-    # posts = Post.objects.filter(author=profile)
-
-    # paginator = Paginator(posts, MAX_POSTS_PER_PAGE)
-    # page_number = request.GET.get('page')
-    # page_obj = paginator.get_page(page_number)
-    # context = {'page_obj': page_obj, 'profile': profile, }
-    # return render(request, 'blog/profile.html', context)
 
     if request.user == profile:
         posts = Post.objects.filter(author=profile)
@@ -232,7 +213,7 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
             return super().delete(request, *args, **kwargs)
         else:
             return HttpResponseForbidden(
-                "You don't have permission to delete this post."
+                "У вас нет разрешения удалять этот пост."
             )
 
 

@@ -15,8 +15,8 @@ def page_not_found_404(request, exception):
 
 
 def csrf_403(request, exception):
-    return render(request, 'pages/403csrf.html', status=404)
+    return render(request, 'pages/403csrf.html', status=403)
 
 
 def server_error_500(request):
-    return render(request, 'pages/500.html', status=404)
+    return render(request, 'pages/500.html', status=500)

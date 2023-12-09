@@ -47,9 +47,8 @@ class Category(PublsihedCreatedModel):
 
     def __str__(self):
         return (
-            f'{super().is_published}'
-            f' {super().created_at}'
-            f' {self.title[:MAX_CHARS]}'
+            super().__str__()
+            + f' {self.title[:MAX_CHARS]}'
             f' {self.description[:MAX_CHARS]}'
             f' {self.slug[:MAX_CHARS]}'
         )
@@ -67,9 +66,8 @@ class Location(PublsihedCreatedModel):
 
     def __str__(self):
         return (
-            f'{super().is_published}'
-            f' {super().created_at}'
-            f' {self.name[:MAX_CHARS]}'
+            super().__str__()
+            + f' {self.name[:MAX_CHARS]}'
         )
 
 
@@ -122,9 +120,8 @@ class Post(PublsihedCreatedModel):
 
     def __str__(self):
         return (
-            f'{super().is_published}'
-            f' {super().created_at}'
-            f' {self.title[:MAX_CHARS]}'
+            super().__str__()
+            + f' {self.title[:MAX_CHARS]}'
             f' {self.text[:MAX_CHARS]}'
             f' {self.pub_date}'
             f' {self.author}'
@@ -137,12 +134,22 @@ class Comments (models.Model):
         Post,
         on_delete=models.CASCADE,
         related_name='comments',
+        verbose_name='публикация'
     )
     created_at = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(
         User,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        verbose_name='Автор публикации',
+        related_name='comments'
     )
 
     class Meta:
         ordering = ('created_at',)
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+
+    def __str__(self):
+        return (
+            f' {self.text[:MAX_CHARS]}'
+        )

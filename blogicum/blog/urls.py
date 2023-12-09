@@ -7,7 +7,7 @@ app_name = 'blog'
 urlpatterns = [
     path('posts/<int:post_id>/', views.post_detail, name='post_detail'),
     path(
-        'posts/<int:pk>/edit/',
+        'posts/<int:post_id>/edit/',
         views.PostUpdateView.as_view(),
         name='edit_post'
     ),
@@ -20,7 +20,7 @@ urlpatterns = [
         views.edit_comment, name='edit_comment'
     ),
     path(
-        'posts/<int:pk>/delete/',
+        'posts/<int:post_id>/delete/',
         views.PostDeleteView.as_view(),
         name='delete_post'
     ),

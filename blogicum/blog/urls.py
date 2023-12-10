@@ -37,5 +37,5 @@ urlpatterns = [
         name='edit_profile'),
     path('profile/<str:username>/', views.profile, name='profile'),
     path('posts/create/', views.PostCreateView.as_view(), name='create_post'),
-    path('', views.Index.as_view(), name='index'),
+    path('', views.IndexView.as_view(), name='index'),
 ]

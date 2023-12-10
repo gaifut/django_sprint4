@@ -47,8 +47,8 @@ class Category(PublsihedCreatedModel):
 
     def __str__(self):
         return (
-            super().__str__()
-            + f' {self.title[:MAX_CHARS]}'
+            f'{super().__str__()}'
+            f' {self.title[:MAX_CHARS]}'
             f' {self.description[:MAX_CHARS]}'
             f' {self.slug[:MAX_CHARS]}'
         )
@@ -66,8 +66,8 @@ class Location(PublsihedCreatedModel):
 
     def __str__(self):
         return (
-            super().__str__()
-            + f' {self.name[:MAX_CHARS]}'
+            f'{super().__str__()}'
+            f' {self.name[:MAX_CHARS]}'
         )
 
 
@@ -120,8 +120,8 @@ class Post(PublsihedCreatedModel):
 
     def __str__(self):
         return (
-            super().__str__()
-            + f' {self.title[:MAX_CHARS]}'
+            f'{super().__str__()}'
+            f' {self.title[:MAX_CHARS]}'
             f' {self.text[:MAX_CHARS]}'
             f' {self.pub_date}'
             f' {self.author}'

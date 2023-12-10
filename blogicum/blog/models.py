@@ -110,9 +110,6 @@ class Post(PublsihedCreatedModel):
         blank=True
     )
 
-    def comment_count(self):
-        return self.comments.count()
-
     class Meta:
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
@@ -150,6 +147,4 @@ class Comments (models.Model):
         verbose_name_plural = 'Комментарии'
 
     def __str__(self):
-        return (
-            f' {self.text[:MAX_CHARS]}'
-        )
+        return self.text[:MAX_CHARS]

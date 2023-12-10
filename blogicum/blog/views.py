@@ -3,6 +3,7 @@ import datetime
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.generic import (
     CreateView, DeleteView, TemplateView, UpdateView
@@ -23,10 +24,16 @@ def filter_by_common_attributes(posts):
 
 
 def page_obj(request, posts):
-    paginator = Paginator(posts, MAX_POSTS_PER_PAGE)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    return page_obj
+    return Paginator(
+        posts, MAX_POSTS_PER_PAGE).get_page(
+            request.GET.get('page')
+    )
+
+
+def annotate_comment_count(posts):
+    return posts.annotate(
+        comment_count=Count(
+            'comments')).order_by('-pub_date')
 
 
 class IndexView(TemplateView):
@@ -34,8 +41,13 @@ class IndexView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        posts = filter_by_common_attributes(Post.objects)
-        context['page_obj'] = page_obj(self.request, posts)
+        posts = filter_by_common_attributes(
+            annotate_comment_count(Post.objects)
+        )
+        context['page_obj'] = page_obj(
+            self.request,
+            posts
+        )
         return context
 
 
@@ -62,8 +74,9 @@ def category_posts(request, category_slug):
         is_published=True,
     )
 
-    posts = filter_by_common_attributes(
-        category.posts)
+    posts = annotate_comment_count(
+        filter_by_common_attributes(category.posts)
+    )
     context = {
         'page_obj': page_obj(request, posts),
         'category': category}
@@ -74,9 +87,11 @@ def profile(request, username):
     profile = get_object_or_404(User, username=username)
 
     if request.user == profile:
-        posts = profile.posts.all()
+        posts = annotate_comment_count(profile.posts.all())
     else:
-        posts = filter_by_common_attributes(profile.posts)
+        posts = annotate_comment_count(
+            filter_by_common_attributes(profile.posts)
+        )
 
     context = {'page_obj': page_obj(request, posts), 'profile': profile}
 
@@ -89,8 +104,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     fields = ['first_name', 'last_name', 'username']
 
     def get_object(self, queryset=None):
-        username = self.kwargs.get('username')
-        return get_object_or_404(User, username=username)
+        return get_object_or_404(User, username=self.kwargs.get('username'))
 
     def get_success_url(self):
         return reverse(
@@ -129,24 +143,11 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         post_id = self.kwargs.get('post_id')
         return get_object_or_404(Post, pk=post_id)
 
-    def get(self, request, *args, **kwargs):
-        if (self.request.user == self.get_object().author):
-            return super().get(request, *args, **kwargs)
-        else:
-            return redirect(
-                reverse('blog:post_detail', kwargs={
-                    'post_id': self.kwargs['pk']
-                }))
-
     def form_valid(self, form):
-        if (self.request.user == self.get_object().author):
+        if self.request.user == self.get_object().author:
             form.instance.author = self.request.user
             return super().form_valid(form)
-        else:
-            return redirect(
-                reverse('blog:post_detail', kwargs={
-                    'post_id': form.instance.id
-                }))
+        return redirect(reverse('blog:post_detail', args=(form.instance.id,)))
 
 
 @login_required
@@ -171,7 +172,7 @@ def edit_comment(request, post_id, comment_id):
     form = CommentsForm(request.POST or None, instance=comment)
 
     if form.is_valid():
-        comment.save()
+        form.save()
         return redirect('blog:post_detail', post_id=post_id)
     return render(
         request,
@@ -192,17 +193,13 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_object(self, queryset=None):
         post_id = self.kwargs.get('post_id')
-        return get_object_or_404(Post, pk=post_id)
+        return get_object_or_404(Post, pk=post_id, author=self.request.user)
 
     def form_valid(self, form):
         return super().form_valid(form)
 
     def delete(self, request, *args, **kwargs):
-        post = self.get_object()
-        if (self.request.user == post.author):
-            return super().delete(request, *args, **kwargs)
-        else:
-            return redirect('blog:post_detail', post_id=post.id)
+        return super().delete(request, *args, **kwargs)
 
 
 @login_required

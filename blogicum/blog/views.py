@@ -25,8 +25,10 @@ def filter_by_common_attributes(posts):
 
 def page_obj(request, posts):
     return Paginator(
-        posts, MAX_POSTS_PER_PAGE).get_page(
-            request.GET.get('page')
+        posts,
+        MAX_POSTS_PER_PAGE
+    ).get_page(
+        request.GET.get('page')
     )
 
 
@@ -74,28 +76,29 @@ def category_posts(request, category_slug):
         is_published=True,
     )
 
-    posts = annotate_comment_count(
-        filter_by_common_attributes(category.posts)
-    )
-    context = {
-        'page_obj': page_obj(request, posts),
-        'category': category}
-    return render(request, 'blog/category.html', context)
+    return render(
+        request, 'blog/category.html', {
+            'page_obj': page_obj(
+                request, annotate_comment_count(
+                    filter_by_common_attributes(category.posts))),
+            'category': category
+        })
 
 
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
+    posts_query = profile.posts.all()
 
-    if request.user == profile:
-        posts = annotate_comment_count(profile.posts.all())
-    else:
-        posts = annotate_comment_count(
-            filter_by_common_attributes(profile.posts)
-        )
+    if request.user != profile:
+        posts_query = filter_by_common_attributes(posts_query)
 
-    context = {'page_obj': page_obj(request, posts), 'profile': profile}
-
-    return render(request, 'blog/profile.html', context)
+    return render(
+        request,
+        'blog/profile.html', {
+            'page_obj': page_obj(
+                request, annotate_comment_count(posts_query)),
+            'profile': profile
+        })
 
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
